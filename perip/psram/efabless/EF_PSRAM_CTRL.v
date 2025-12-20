@@ -14,7 +14,7 @@
 	limitations under the License.
 */
 /*
-    QSPI PSRAM Controller
+    QSPI/QPI PSRAM Controller
 
     Pseudostatic RAM (PSRAM) is DRAM combined with a self-refresh circuit.
     It appears externally as slower SRAM, albeit with a density/cost advantage
@@ -22,31 +22,21 @@
 
     The controller was designed after https://www.issi.com/WW/pdf/66-67WVS4M8ALL-BLL.pdf
     utilizing both EBh and 38h commands for reading and writting.
-
-    Benchmark data collected using CM0 CPU when memory is PSRAM only
-
-        Benchmark       PSRAM (us)  1-cycle SRAM (us)   Slow-down
-        ---------       ----------  -----------------   ---------
-        xtea            840         212                 3.94
-        stress          1607        446                 3.6
-        hash            5340        1281                4.16
-        chacha          2814        320                 8.8
-        aes sbox        2370        322                 7.3
-        nqueens         3496        459                 7.6
-        mtrans          2171        2034                1.06
-        rle             903         155                 5.8
-        prime           549         97                  5.66
+    
+    Modified to support QPI mode (4-4-4) for improved efficiency.
 */
 
 `timescale              1ns/1ps
 `default_nettype        none
 
+// QPI Mode Reader - Using EBH Command
 module PSRAM_READER (
     input   wire            clk,
     input   wire            rst_n,
     input   wire [23:0]     addr,
     input   wire            rd,
     input   wire [2:0]      size,
+    input   wire            qpi_mode,   // QPI mode enable
     output  wire            done,
     output  wire [31:0]     line,
 
@@ -60,7 +50,13 @@ module PSRAM_READER (
     localparam  IDLE = 1'b0,
                 READ = 1'b1;
 
-    wire [7:0]  FINAL_COUNT = 19 + size*2; // was 27: Always read 1 word
+    // QPI mode: 2(cmd) + 6(addr) + 6(wait) + data = 14 + size*2
+    // SPI mode: 8(cmd) + 6(addr) + 6(wait) + data = 20 + size*2
+    wire [7:0]  FINAL_COUNT = qpi_mode ? (13 + size*2) : (19 + size*2);
+    wire [7:0]  CMD_END     = qpi_mode ? 8'd1 : 8'd7;   // Command phase end
+    wire [7:0]  ADDR_END    = qpi_mode ? 8'd7 : 8'd13;  // Address phase end
+    wire [7:0]  WAIT_END    = qpi_mode ? 8'd13 : 8'd19; // Wait phase end
+    wire [7:0]  DATA_START  = qpi_mode ? 8'd14 : 8'd20; // Data phase start
 
     reg         state, nstate;
     reg [7:0]   counter;
@@ -109,26 +105,43 @@ module PSRAM_READER (
         if(!rst_n)
             saddr <= 24'b0;
         else if((state == IDLE) && rd)
-            //saddr <= {addr[23:2], 2'b0};
             saddr <= {addr[23:0]};
 
     // Sample with the negedge of sck
-    wire[1:0] byte_index = {counter[7:1] - 8'd10}[1:0];
+    wire[1:0] byte_index_qpi = {counter[7:1] - 8'd7}[1:0];
+    wire[1:0] byte_index_spi = {counter[7:1] - 8'd10}[1:0];
+    wire[1:0] byte_index = qpi_mode ? byte_index_qpi : byte_index_spi;
+    
     always @ (posedge clk)
-        if(counter >= 20 && counter <= FINAL_COUNT)
+        if(counter >= DATA_START && counter <= FINAL_COUNT)
             if(sck)
-                data[byte_index] <= {data[byte_index][3:0], din}; // Optimize!
+                data[byte_index] <= {data[byte_index][3:0], din};
 
-    assign dout     =   (counter < 8)   ?   {3'b0, CMD_EBH[7 - counter]}:
+    // Command and address output
+    assign dout     =   qpi_mode ? (
+                        // QPI mode: 4-bit command
+                        (counter == 0)  ?   CMD_EBH[7:4]        :
+                        (counter == 1)  ?   CMD_EBH[3:0]        :
+                        (counter == 2)  ?   saddr[23:20]        :
+                        (counter == 3)  ?   saddr[19:16]        :
+                        (counter == 4)  ?   saddr[15:12]        :
+                        (counter == 5)  ?   saddr[11:8]         :
+                        (counter == 6)  ?   saddr[7:4]          :
+                        (counter == 7)  ?   saddr[3:0]          :
+                        4'h0
+                    ) : (
+                        // SPI mode: 1-bit command
+                        (counter < 8)   ?   {3'b0, CMD_EBH[7 - counter]}:
                         (counter == 8)  ?   saddr[23:20]        :
                         (counter == 9)  ?   saddr[19:16]        :
                         (counter == 10) ?   saddr[15:12]        :
                         (counter == 11) ?   saddr[11:8]         :
                         (counter == 12) ?   saddr[7:4]          :
                         (counter == 13) ?   saddr[3:0]          :
-                        4'h0;
+                        4'h0
+                    );
 
-    assign douten   = (counter < 14);
+    assign douten   = qpi_mode ? (counter <= 8) : (counter < 14);
 
     assign done     = (counter == FINAL_COUNT+1);
 
@@ -141,7 +154,7 @@ module PSRAM_READER (
 
 endmodule
 
-// Using 38H Command
+// QPI Mode Writer - Using 38H Command
 module PSRAM_WRITER (
     input   wire            clk,
     input   wire            rst_n,
@@ -149,6 +162,7 @@ module PSRAM_WRITER (
     input   wire [31: 0]    line,
     input   wire [2:0]      size,
     input   wire            wr,
+    input   wire            qpi_mode,   // QPI mode enable
     output  wire            done,
 
     output  reg             sck,
@@ -157,16 +171,17 @@ module PSRAM_WRITER (
     output  wire [3:0]      dout,
     output  wire            douten
 );
-    //localparam  DATA_START = 14;
     localparam  IDLE = 1'b0,
                 WRITE = 1'b1;
 
-    wire[7:0]        FINAL_COUNT = 13 + size*2;
+    // QPI mode: 2(cmd) + 6(addr) + data = 8 + size*2
+    // SPI mode: 8(cmd) + 6(addr) + data = 14 + size*2
+    wire[7:0]   FINAL_COUNT = qpi_mode ? (7 + size*2) : (13 + size*2);
+    wire[7:0]   DATA_START  = qpi_mode ? 8'd8 : 8'd14;
 
     reg         state, nstate;
     reg [7:0]   counter;
     reg [23:0]  saddr;
-    //reg [7:0]   data [3:0];
 
     wire[7:0]   CMD_38H = 8'h38;
 
@@ -212,7 +227,27 @@ module PSRAM_WRITER (
         else if((state == IDLE) && wr)
             saddr <= addr;
 
-    assign dout     =   (counter < 8)   ?   {3'b0, CMD_38H[7 - counter]}:
+    assign dout     =   qpi_mode ? (
+                        // QPI mode: 4-bit command
+                        (counter == 0)  ?   CMD_38H[7:4]        :
+                        (counter == 1)  ?   CMD_38H[3:0]        :
+                        (counter == 2)  ?   saddr[23:20]        :
+                        (counter == 3)  ?   saddr[19:16]        :
+                        (counter == 4)  ?   saddr[15:12]        :
+                        (counter == 5)  ?   saddr[11:8]         :
+                        (counter == 6)  ?   saddr[7:4]          :
+                        (counter == 7)  ?   saddr[3:0]          :
+                        (counter == 8)  ?   line[7:4]           :
+                        (counter == 9)  ?   line[3:0]           :
+                        (counter == 10) ?   line[15:12]         :
+                        (counter == 11) ?   line[11:8]          :
+                        (counter == 12) ?   line[23:20]         :
+                        (counter == 13) ?   line[19:16]         :
+                        (counter == 14) ?   line[31:28]         :
+                        line[27:24]
+                    ) : (
+                        // SPI mode: 1-bit command
+                        (counter < 8)   ?   {3'b0, CMD_38H[7 - counter]}:
                         (counter == 8)  ?   saddr[23:20]        :
                         (counter == 9)  ?   saddr[19:16]        :
                         (counter == 10) ?   saddr[15:12]        :
@@ -226,7 +261,8 @@ module PSRAM_WRITER (
                         (counter == 18) ?   line[23:20]         :
                         (counter == 19) ?   line[19:16]         :
                         (counter == 20) ?   line[31:28]         :
-                        line[27:24];
+                        line[27:24]
+                    );
 
     assign douten   = (~ce_n);
 
