@@ -173,7 +173,7 @@ module spi_top
   always @(posedge wb_clk_i or posedge wb_rst_i)
   begin
     if (wb_rst_i)
-        divider <= #Tp {`SPI_DIVIDER_LEN{1'b0}};
+        divider <= #Tp 16; // Default Divider = 16 for Flash Boot
     else if (spi_divider_sel && wb_we_i && !tip)
       begin
       `ifdef SPI_DIVIDER_LEN_8
