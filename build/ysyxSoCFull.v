@@ -2033,14 +2033,14 @@ module APBSDRAM(	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/devic
   output [31:0] auto_in_prdata,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/rocket-chip/dependencies/diplomacy/diplomacy/src/diplomacy/lazymodule/LazyModuleImp.scala:100:25
   output        sdram_bundle_clk,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/device/SDRAM.scala:89:26
                 sdram_bundle_cke,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/device/SDRAM.scala:89:26
-                sdram_bundle_cs,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/device/SDRAM.scala:89:26
-                sdram_bundle_ras,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/device/SDRAM.scala:89:26
+  output [1:0]  sdram_bundle_cs,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/device/SDRAM.scala:89:26
+  output        sdram_bundle_ras,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/device/SDRAM.scala:89:26
                 sdram_bundle_cas,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/device/SDRAM.scala:89:26
                 sdram_bundle_we,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/device/SDRAM.scala:89:26
   output [12:0] sdram_bundle_a,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/device/SDRAM.scala:89:26
   output [1:0]  sdram_bundle_ba,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/device/SDRAM.scala:89:26
-                sdram_bundle_dqm,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/device/SDRAM.scala:89:26
-  inout  [15:0] sdram_bundle_dq	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/device/SDRAM.scala:89:26
+  output [3:0]  sdram_bundle_dqm,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/device/SDRAM.scala:89:26
+  inout  [31:0] sdram_bundle_dq	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/device/SDRAM.scala:89:26
 );
 
   sdram_top_apb msdram (	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/device/SDRAM.scala:91:24
@@ -4228,14 +4228,14 @@ module ysyxSoCASIC(	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/So
   inout  [3:0]  psram_dio,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:88:19
   output        sdram_clk,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:89:19
                 sdram_cke,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:89:19
-                sdram_cs,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:89:19
-                sdram_ras,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:89:19
+  output [1:0]  sdram_cs,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:89:19
+  output        sdram_ras,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:89:19
                 sdram_cas,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:89:19
                 sdram_we,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:89:19
   output [12:0] sdram_a,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:89:19
   output [1:0]  sdram_ba,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:89:19
-                sdram_dqm,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:89:19
-  inout  [15:0] sdram_dq,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:89:19
+  output [3:0]  sdram_dqm,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:89:19
+  inout  [31:0] sdram_dq,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:89:19
   output [15:0] gpio_out,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:90:18
   input  [15:0] gpio_in,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:90:18
   output [7:0]  gpio_seg_0,	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:90:18
@@ -5270,15 +5270,15 @@ module ysyxSoCFull(	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/So
   wire        _asic_psram_ce_n;	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:107:24
   wire        _asic_sdram_clk;	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:107:24
   wire        _asic_sdram_cke;	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:107:24
-  wire        _asic_sdram_cs;	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:107:24
+  wire [1:0]  _asic_sdram_cs;	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:107:24
   wire        _asic_sdram_ras;	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:107:24
   wire        _asic_sdram_cas;	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:107:24
   wire        _asic_sdram_we;	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:107:24
   wire [12:0] _asic_sdram_a;	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:107:24
   wire [1:0]  _asic_sdram_ba;	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:107:24
-  wire [1:0]  _asic_sdram_dqm;	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:107:24
+  wire [3:0]  _asic_sdram_dqm;	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:107:24
   wire [3:0]  _dio_wire;	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:143:23
-  wire [15:0] _dq_wire;	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:145:23
+  wire [31:0] _dq_wire;	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:145:23
   ysyxSoCASIC asic (	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:107:24
     .clock      (clock),
     .reset      (reset),
@@ -5337,18 +5337,61 @@ module ysyxSoCFull(	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/So
     .ce_n (_asic_psram_ce_n),	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:107:24
     .dio  (_dio_wire)
   );	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:143:23
-  sdram sdram (	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:145:23
-    .clk (_asic_sdram_clk),	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:107:24
-    .cke (_asic_sdram_cke),	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:107:24
-    .cs  (_asic_sdram_cs),	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:107:24
-    .ras (_asic_sdram_ras),	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:107:24
-    .cas (_asic_sdram_cas),	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:107:24
-    .we  (_asic_sdram_we),	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:107:24
-    .a   (_asic_sdram_a),	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:107:24
-    .ba  (_asic_sdram_ba),	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:107:24
-    .dqm (_asic_sdram_dqm),	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:107:24
-    .dq  (_dq_wire)
-  );	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/SoC.scala:145:23
+  // Dual 16-bit SDRAM Simulation Models replacing sdram_x32
+  // Connect to internal ASIC wires
+  // Rank 0 (Lower 64MB)
+  sdram u_sdram_lo (
+    .clk(_asic_sdram_clk),
+    .cke(_asic_sdram_cke),
+    .cs (_asic_sdram_cs[0]),
+    .ras(_asic_sdram_ras),
+    .cas(_asic_sdram_cas),
+    .we (_asic_sdram_we),
+    .a  (_asic_sdram_a),
+    .ba (_asic_sdram_ba),
+    .dqm(_asic_sdram_dqm[1:0]),
+    .dq (_dq_wire[15:0])
+  );
+
+  sdram u_sdram_hi (
+    .clk(_asic_sdram_clk),
+    .cke(_asic_sdram_cke),
+    .cs (_asic_sdram_cs[0]),
+    .ras(_asic_sdram_ras),
+    .cas(_asic_sdram_cas),
+    .we (_asic_sdram_we),
+    .a  (_asic_sdram_a),
+    .ba (_asic_sdram_ba),
+    .dqm(_asic_sdram_dqm[3:2]),
+    .dq (_dq_wire[31:16])
+  );
+
+  // Rank 1 (Upper 64MB) - Word Extension
+  sdram u_sdram_1_lo (
+    .clk(_asic_sdram_clk),
+    .cke(_asic_sdram_cke),
+    .cs (_asic_sdram_cs[1]),
+    .ras(_asic_sdram_ras),
+    .cas(_asic_sdram_cas),
+    .we (_asic_sdram_we),
+    .a  (_asic_sdram_a),
+    .ba (_asic_sdram_ba),
+    .dqm(_asic_sdram_dqm[1:0]),
+    .dq (_dq_wire[15:0])
+  );
+
+  sdram u_sdram_1_hi (
+    .clk(_asic_sdram_clk),
+    .cke(_asic_sdram_cke),
+    .cs (_asic_sdram_cs[1]),
+    .ras(_asic_sdram_ras),
+    .cas(_asic_sdram_cas),
+    .we (_asic_sdram_we),
+    .a  (_asic_sdram_a),
+    .ba (_asic_sdram_ba),
+    .dqm(_asic_sdram_dqm[3:2]),
+    .dq (_dq_wire[31:16])
+  );
 endmodule
 
 module ysyxSoCTop(	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/Top.scala:13:7
@@ -5379,7 +5422,10 @@ module ysyxSoCTop(	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/Top
     .externalPins_vga_valid  (/* unused */),
     .externalPins_uart_rx    (1'h0),
     .externalPins_uart_tx    (/* unused */)
-  );	// home/parallels/Desktop/ysyx/ysyx-workbench/ysyxSoC/src/Top.scala:18:20
+  ); 
+
+
+
 endmodule
 
 

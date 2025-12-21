@@ -66,7 +66,7 @@ module sdram(
   integer i;
   
   initial begin
-    $display("[SDRAM Model] Initialized. Size: 8MB");
+    // $display("[SDRAM Model] Initialized. Size: 8MB");
     cas_latency = 3'd2;
     burst_length_code = 3'b001;
     row_active = 4'b0;
@@ -81,28 +81,48 @@ module sdram(
 
   // Read Pipeline Logic using Next State variables for clarity
   reg [4:0] next_read_pipe_valid;
+  reg [DATA_BITS-1:0] next_read_pipe_data [0:4];
   
   always @(posedge clk) begin
     if (!cke) begin
       dq_oe <= 1'b0;
     end else begin
-      // Default: Shift Valid
+      // Default: Shift Valid and Data
       next_read_pipe_valid = {read_pipe_valid[3:0], 1'b0};
       
-      // Shift Data Pipeline
-      read_pipe_data[4] <= read_pipe_data[3];
-      read_pipe_data[3] <= read_pipe_data[2];
-      read_pipe_data[2] <= read_pipe_data[1];
-      read_pipe_data[1] <= read_pipe_data[0];
-      read_pipe_data[0] <= 16'h0;
+      next_read_pipe_data[4] = read_pipe_data[3];
+      next_read_pipe_data[3] = read_pipe_data[2];
+      next_read_pipe_data[2] = read_pipe_data[1];
+      next_read_pipe_data[1] = read_pipe_data[0];
+      next_read_pipe_data[0] = 16'h0;
 
-      // Handle Command
+      // Handle Command (Overrides)
       case (cmd)
+        CMD_READ: begin
+          if (row_active[ba]) begin
+            // Insert into pipeline start (index 0 AND 1 for hold time)
+            next_read_pipe_data[0] = mem[calc_addr(ba, active_row[ba], a[COL_BITS-1:0])];
+            next_read_pipe_data[1] = mem[calc_addr(ba, active_row[ba], a[COL_BITS-1:0])]; // Burst Hack
+            next_read_pipe_valid[0] = 1'b1;
+            next_read_pipe_valid[1] = 1'b1; // Burst Hack
+
+             // Burst handling (simplistic)
+             // if (burst_length_code == 3'b000) begin
+             //     $display("[%t] SDRAM READ: Bank=%d, Row=%x, Col=%x, CL=%d, MEM=%x", $time, ba, active_row[ba], a[COL_BITS-1:0], cas_latency, mem[calc_addr(ba, active_row[ba], a[COL_BITS-1:0])]);
+             // end
+          end
+          burst_write_active <= 1'b0;
+        end
+        CMD_WRITE: begin
+            if (!dqm[0]) mem[calc_addr(ba, active_row[ba], a[COL_BITS-1:0])][7:0] <= dq[7:0];
+            if (!dqm[1]) mem[calc_addr(ba, active_row[ba], a[COL_BITS-1:0])][15:8] <= dq[15:8];
+            // $display("[%t] SDRAM WRITE: Bank=%d, Row=%x, Col=%x, Data=%x, DQM=%b", $time, ba, active_row[ba], a[COL_BITS-1:0], dq, dqm);
+        end
         CMD_LOAD_MODE: begin
           burst_length_code <= a[2:0];
           cas_latency <= a[6:4];
           burst_write_active <= 1'b0;
-          // $display("[SDRAM] LOAD_MODE: CAS=%0d", a[6:4]);
+          // $display("[%t] SDRAM LOAD_MODE: CAS=%d, BL=%d", $time, a[6:4], a[2:0]);
         end
         
         CMD_ACTIVE: begin
@@ -110,39 +130,6 @@ module sdram(
           row_active[ba] <= 1'b1;
           burst_write_active <= 1'b0;
           // $display("[SDRAM] ACTIVE: Bank=%0d", ba);
-        end
-        
-        CMD_READ: begin
-          if (row_active[ba]) begin
-            // 1st word injection
-            read_pipe_data[0] <= mem[calc_addr(ba, active_row[ba], a[COL_BITS-1:0])];
-            next_read_pipe_valid[0] = 1'b1; // Override bit 0
-            
-            // Pending 2nd word
-            read_burst_pending <= 1'b1;
-            read_burst_bank <= ba;
-            read_burst_row <= active_row[ba];
-            read_burst_col <= a[COL_BITS-1:0] + 1;
-
-            // $display("[SDRAM] READ: Bank=%0d, Row=%0d, Col=%0d, Data=%04h", 
-            //          ba, active_row[ba], a[COL_BITS-1:0],
-            //          mem[calc_addr(ba, active_row[ba], a[COL_BITS-1:0])]);
-          end
-          burst_write_active <= 1'b0;
-        end
-        
-        CMD_WRITE: begin
-          if (row_active[ba]) begin
-            if (!dqm[0]) mem[calc_addr(ba, active_row[ba], a[COL_BITS-1:0])][7:0] <= dq[7:0];
-            if (!dqm[1]) mem[calc_addr(ba, active_row[ba], a[COL_BITS-1:0])][15:8] <= dq[15:8];
-            
-            burst_write_active <= 1'b1;
-            burst_bank <= ba;
-            burst_row <= active_row[ba];
-            burst_col_next <= a[COL_BITS-1:0] + 1;
-            
-            // $display("[SDRAM] WRITE(0) Data=%04h DQM=%b", dq, dqm);
-          end
         end
         
         CMD_NOP: begin
@@ -166,28 +153,29 @@ module sdram(
         end
       endcase
       
-      // Handle Pending Burst Read
+      // Handle Pending Burst Read (Overrides)
       if (read_burst_pending) begin
-        read_pipe_data[0] <= mem[calc_addr(read_burst_bank, read_burst_row, read_burst_col)];
+        next_read_pipe_data[0] = mem[calc_addr(read_burst_bank, read_burst_row, read_burst_col)];
         next_read_pipe_valid[0] = 1'b1; // Override bit 0
         read_burst_pending <= 1'b0;
         // $display("[SDRAM] READ(Burst): Data=%04h", mem[calc_addr(read_burst_bank, read_burst_row, read_burst_col)]);
       end
       
-      // Update Valid
+      // Update Registers
       read_pipe_valid <= next_read_pipe_valid;
+      read_pipe_data[4] <= next_read_pipe_data[4];
+      read_pipe_data[3] <= next_read_pipe_data[3];
+      read_pipe_data[2] <= next_read_pipe_data[2];
+      read_pipe_data[1] <= next_read_pipe_data[1];
+      read_pipe_data[0] <= next_read_pipe_data[0];
       
-      // Output Logic
-      dq_oe <= 1'b0;
-      // Note: checking OLD read_pipe which holds data for NEXT cycle
-      // CL=2: Need to drive at T1.5 (Negedge) to be stable for T2.0 (Posedge) sample.
-      // Index 0 holds data from T0->T1 transition. Old Index 0 at T1 is valid.
-      // So use Index 0 for CL=2.
-      if (read_pipe_valid[0]) begin 
-         dq_oe <= 1'b1;
-         dq_out <= read_pipe_data[0];
-         // $display("[SDRAM] DQ Drive: %x at time %t", read_pipe_data[0], $time);
+      // Output Logic (Using NEXT valid to drive early, but OLD data to align)
+      // T2 Update: Next Valid[1]=1. OE<=1. Old Data[1]=Val. Out<=Val.
+      if (cas_latency >= 2) begin
+          dq_oe <= read_pipe_valid[cas_latency-2]; 
+          dq_out <= read_pipe_data[cas_latency-2];
       end
+
     end
   end
 
