@@ -87,23 +87,25 @@ module gpio_top_apb(
     input [3:0] hex;
     begin
       case (hex)
-        4'h0: hex_to_seg = 8'b00111111;  // 0
-        4'h1: hex_to_seg = 8'b00000110;  // 1
-        4'h2: hex_to_seg = 8'b01011011;  // 2
-        4'h3: hex_to_seg = 8'b01001111;  // 3
-        4'h4: hex_to_seg = 8'b01100110;  // 4
-        4'h5: hex_to_seg = 8'b01101101;  // 5
-        4'h6: hex_to_seg = 8'b01111101;  // 6
-        4'h7: hex_to_seg = 8'b00000111;  // 7
-        4'h8: hex_to_seg = 8'b01111111;  // 8
-        4'h9: hex_to_seg = 8'b01101111;  // 9
-        4'hA: hex_to_seg = 8'b01110111;  // A
-        4'hB: hex_to_seg = 8'b01111100;  // b
-        4'hC: hex_to_seg = 8'b00111001;  // C
-        4'hD: hex_to_seg = 8'b01011110;  // d
-        4'hE: hex_to_seg = 8'b01111001;  // E
+        // Active Low (0=ON), MSB=A, LSB=DP
+        //        ABCDEFG P
+        4'h0: hex_to_seg = 8'b00000011;  // 0
+        4'h1: hex_to_seg = 8'b10011111;  // 1
+        4'h2: hex_to_seg = 8'b00100101;  // 2
+        4'h3: hex_to_seg = 8'b00001101;  // 3
+        4'h4: hex_to_seg = 8'b10011001;  // 4
+        4'h5: hex_to_seg = 8'b01001001;  // 5
+        4'h6: hex_to_seg = 8'b01000001;  // 6
+        4'h7: hex_to_seg = 8'b00011111;  // 7
+        4'h8: hex_to_seg = 8'b00000001;  // 8
+        4'h9: hex_to_seg = 8'b00001001;  // 9
+        4'hA: hex_to_seg = 8'b00010001;  // A
+        4'hB: hex_to_seg = 8'b11000001;  // b
+        4'hC: hex_to_seg = 8'b01100011;  // C
+        4'hD: hex_to_seg = 8'b10000101;  // d
+        4'hE: hex_to_seg = 8'b01100001;  // E
         4'hF: hex_to_seg = 8'b01110001;  // F
-        default: hex_to_seg = 8'b00000000;
+        default: hex_to_seg = 8'b11111111; // OFF
       endcase
     end
   endfunction
