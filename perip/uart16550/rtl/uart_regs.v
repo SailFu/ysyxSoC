@@ -900,4 +900,17 @@ end
    end
 `endif
 
+// Simulation-only UART output
+// synopsys translate_off
+`ifndef SYNTHESIS
+always @(posedge clk) begin
+    if (fifo_write) begin
+        $write("%c", wb_dat_i);
+        $fflush();
+    end
+end
+`endif
+// synopsys translate_on
+
+
 endmodule

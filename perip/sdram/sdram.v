@@ -102,7 +102,7 @@ module sdram(
           burst_length_code <= a[2:0];
           cas_latency <= a[6:4];
           burst_write_active <= 1'b0;
-          $display("[SDRAM] LOAD_MODE: CAS=%0d", a[6:4]);
+          // $display("[SDRAM] LOAD_MODE: CAS=%0d", a[6:4]);
         end
         
         CMD_ACTIVE: begin
@@ -124,9 +124,9 @@ module sdram(
             read_burst_row <= active_row[ba];
             read_burst_col <= a[COL_BITS-1:0] + 1;
 
-            $display("[SDRAM] READ: Bank=%0d, Row=%0d, Col=%0d, Data=%04h", 
-                     ba, active_row[ba], a[COL_BITS-1:0],
-                     mem[calc_addr(ba, active_row[ba], a[COL_BITS-1:0])]);
+            // $display("[SDRAM] READ: Bank=%0d, Row=%0d, Col=%0d, Data=%04h", 
+            //          ba, active_row[ba], a[COL_BITS-1:0],
+            //          mem[calc_addr(ba, active_row[ba], a[COL_BITS-1:0])]);
           end
           burst_write_active <= 1'b0;
         end
@@ -171,7 +171,7 @@ module sdram(
         read_pipe_data[0] <= mem[calc_addr(read_burst_bank, read_burst_row, read_burst_col)];
         next_read_pipe_valid[0] = 1'b1; // Override bit 0
         read_burst_pending <= 1'b0;
-        $display("[SDRAM] READ(Burst): Data=%04h", mem[calc_addr(read_burst_bank, read_burst_row, read_burst_col)]);
+        // $display("[SDRAM] READ(Burst): Data=%04h", mem[calc_addr(read_burst_bank, read_burst_row, read_burst_col)]);
       end
       
       // Update Valid
