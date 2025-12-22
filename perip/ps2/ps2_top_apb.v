@@ -20,14 +20,15 @@ module ps2_top_apb(
   assign in_pready = 1'b1;
   assign in_pslverr = 1'b0;
 
-  // PS/2 clock edge detection
+  // PS/2 clock edge detection - initialize to 0 to match potential idle-low state
   reg [2:0] ps2_clk_sync;
   always @(posedge clock) begin
     if (reset)
-      ps2_clk_sync <= 3'b111;
+      ps2_clk_sync <= 3'b000;  // Initialize to 0 to avoid false edge on startup
     else
       ps2_clk_sync <= {ps2_clk_sync[1:0], ps2_clk};
   end
+  // Detect falling edge: previous was high (1), now is low (0)
   wire ps2_clk_negedge = (ps2_clk_sync[2:1] == 2'b10);
 
   // PS/2 data synchronizer
@@ -40,6 +41,10 @@ module ps2_top_apb(
   end
   wire ps2_data_s = ps2_data_sync[1];
 
+  // Timeout counter - reset receiver if no edges for too long
+  reg [15:0] timeout_cnt;
+  wire timeout = (timeout_cnt == 16'hFFFF);
+  
   // PS/2 receiver state machine
   reg [3:0] bit_cnt;
   reg [10:0] shift_reg;
@@ -51,19 +56,30 @@ module ps2_top_apb(
       bit_cnt <= 4'd0;
       shift_reg <= 11'd0;
       scancode_valid <= 1'b0;
+      timeout_cnt <= 16'd0;
     end else begin
       scancode_valid <= 1'b0;
       
+      // Timeout handling - reset receiver state if no activity
+      if (bit_cnt != 0 && timeout) begin
+        bit_cnt <= 4'd0;
+        timeout_cnt <= 16'd0;
+      end else if (bit_cnt != 0) begin
+        timeout_cnt <= timeout_cnt + 16'd1;
+      end
+      
       if (ps2_clk_negedge) begin
+        timeout_cnt <= 16'd0;  // Reset timeout on valid edge
+        
         // Shift in data (LSB first: start, D0-D7, parity, stop)
         shift_reg <= {ps2_data_s, shift_reg[10:1]};
         
         if (bit_cnt == 4'd10) begin
-          // Complete frame received
+          // Complete frame received - extract from the NEW shifted value
+          // After this shift: {ps2_data_s, shift_reg[10:1]} = {stop, parity, D7..D0, start}
+          // Data bits are at positions [8:1] of the new value, which is shift_reg[9:2] before shift
           bit_cnt <= 4'd0;
-          // Extract data bits (bits 8:1 of shift_reg after final shift)
-          // shift_reg[0] = start, shift_reg[8:1] = data, shift_reg[9] = parity, shift_reg[10] = stop
-          scancode <= shift_reg[8:1];
+          scancode <= shift_reg[9:2];  // Use pre-shift positions that map to [8:1] after shift
           scancode_valid <= 1'b1;
         end else begin
           bit_cnt <= bit_cnt + 4'd1;
@@ -113,3 +129,4 @@ module ps2_top_apb(
                      32'd0;
 
 endmodule
+
