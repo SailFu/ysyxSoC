@@ -26,7 +26,7 @@ module sdram(
   localparam ROW_BITS  = 13;
   localparam BANK_BITS = 2;
   localparam DATA_BITS = 16;
-  localparam MEM_ADDR_BITS = 22; 
+  localparam MEM_ADDR_BITS = 25;  // 128MB = 64M x 16-bit words = 2^26, but shared across 2 chips
   
   reg [DATA_BITS-1:0] mem [0:(1<<MEM_ADDR_BITS)-1];
 
