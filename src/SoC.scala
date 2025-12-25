@@ -142,8 +142,14 @@ class ysyxSoCFull(implicit p: Parameters) extends LazyModule {
 
     val psram = Module(new psram)
     psram.io <> masic.psram
-    val sdram = Module(new sdram)
-    sdram.io <> masic.sdram
+    // Use sdram32 (32-bit) for AXI mode, sdram (16-bit) for APB mode
+    if (Config.sdramUseAXI) {
+      val sdram = Module(new sdram32)
+      sdram.io <> masic.sdram
+    } else {
+      val sdram = Module(new sdram)
+      sdram.io <> masic.sdram
+    }
 
     val externalPins = IO(new Bundle{
       val gpio = chiselTypeOf(masic.gpio)

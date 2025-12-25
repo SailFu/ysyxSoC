@@ -83,7 +83,7 @@ localparam SDRAM_DQM_W           = 4;
 localparam SDRAM_BANKS           = 2 ** SDRAM_BANK_W;
 localparam SDRAM_ROW_W           = SDRAM_ADDR_W - SDRAM_COL_W - SDRAM_BANK_W;
 localparam SDRAM_REFRESH_CNT     = 2 ** SDRAM_ROW_W;
-localparam SDRAM_START_DELAY     = 100000 / (1000 / SDRAM_MHZ); // 100uS
+localparam SDRAM_START_DELAY     = 100; // Reduced for simulation (was 100uS)
 localparam SDRAM_REFRESH_CYCLES  = (64000*SDRAM_MHZ) / SDRAM_REFRESH_CNT-1;
 
 localparam CMD_W             = 4;
@@ -628,6 +628,9 @@ begin
         dqm_q       <= {SDRAM_DQM_W{1'b0}};
 
         data_rd_en_q <= 1'b1;
+
+        // Next state
+        next_state_r = STATE_IDLE;
     end
     //-----------------------------------------------------------------
     // STATE_WRITE0
@@ -651,12 +654,15 @@ begin
         next_state_r = STATE_IDLE; // Single cycle write
 
         // Another pending write request (with no refresh pending)
+        // [FIX] Disabled back-to-back optimization to prevent double-ACK due to pmem latency
+        /*
         if (!refresh_q && ram_req_w && (ram_wr_w != 4'b0))
         begin
             // Open row hit
             if (row_open_q[addr_bank_w] && addr_row_w == active_row_q[addr_bank_w])
                 next_state_r = STATE_WRITE0;
         end
+        */
     end
     //-----------------------------------------
     // STATE_WRITE1
@@ -715,7 +721,7 @@ if (rst_i)
     ack_q   <= 1'b0;
 else
 begin
-    if (state_q == STATE_WRITE0) // Changed from STATE_WRITE1
+    if (state_q == STATE_WRITE0)
         ack_q <= 1'b1;
     else if (rd_q[SDRAM_READ_LATENCY])
         ack_q <= 1'b1;

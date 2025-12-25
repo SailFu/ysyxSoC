@@ -116,6 +116,7 @@ module sdram(
         CMD_WRITE: begin
             if (!dqm[0]) mem[calc_addr(ba, active_row[ba], a[COL_BITS-1:0])][7:0] <= dq[7:0];
             if (!dqm[1]) mem[calc_addr(ba, active_row[ba], a[COL_BITS-1:0])][15:8] <= dq[15:8];
+            if (!dqm[1]) mem[calc_addr(ba, active_row[ba], a[COL_BITS-1:0])][15:8] <= dq[15:8];
             // $display("[%t] SDRAM WRITE: Bank=%d, Row=%x, Col=%x, Data=%x, DQM=%b", $time, ba, active_row[ba], a[COL_BITS-1:0], dq, dqm);
         end
         CMD_LOAD_MODE: begin
@@ -174,6 +175,8 @@ module sdram(
       if (cas_latency >= 2) begin
           dq_oe <= read_pipe_valid[cas_latency-2]; 
           dq_out <= read_pipe_data[cas_latency-2];
+          // if (read_pipe_valid[cas_latency-2])
+          //    $display("[%t] SDRAM DRIVING DQ: %x (OE=1)", $time, read_pipe_data[cas_latency-2]);
       end
 
     end
